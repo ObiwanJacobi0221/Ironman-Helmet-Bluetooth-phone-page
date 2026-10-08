@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a080c">
+<title>Helmet control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #2a080c;
+    --panel: #3b0f15;
+    --line: #6a2b31;
+    --gold: #e3ae45;
+    --gold-dim: #a7782a;
+    --ink: #f6ead2;
+    --muted: #c9a9a0;
+    --glow: #8fe9ff;
+    --eye: .8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 500 18px/1.35 "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+    min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 28px);
+  }
+  main { max-width: 460px; margin: 0 auto; display: grid; gap: 16px; }
+  h1 { font-size: 30px; font-weight: 700; margin: 0; letter-spacing: .01em; }
+  h2 { font-size: 20px; font-weight: 600; margin: 0; color: var(--gold); }
+
+  /* Faceplate */
+  .hero { display: grid; place-items: center; padding: 6px 0 0; }
+  .hero svg { width: min(60vw, 240px); height: auto; overflow: visible; }
+  #plate { transition: transform .7s cubic-bezier(.3,.7,.2,1); }
+  body.open #plate { transform: translateY(-58px); }
+  .slit {
+    fill: var(--glow);
+    opacity: calc(.1 + var(--eye) * .9);
+    filter: drop-shadow(0 0 calc(var(--eye) * 10px) var(--glow));
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+  }
+  #status { margin: 0; color: var(--muted); }
+
+  button {
+    font: inherit; font-weight: 600; font-size: 20px;
+    color: var(--ink);
+    background: transparent;
+    border: 1.5px solid var(--gold-dim);
+    border-radius: 10px;
+    padding: 10px 16px;
+    min-height: 48px;
+    cursor: pointer;
+  }
+  button.primary { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: default; }
+  button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--glow); outline-offset: 2px; }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .slider label { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  input[type=range] { width: 100%; height: 32px; accent-color: var(--gold); }
+  output { color: var(--gold); font-weight: 700; }
+
+  details summary { font-size: 20px; font-weight: 600; color: var(--gold); cursor: pointer; }
+  details[open] summary { margin-bottom: 12px; }
+  .row { display: grid; grid-template-columns: 1fr 110px 90px; gap: 8px; align-items: center; margin-bottom: 10px; }
+  input[type=number] {
+    font: inherit; font-size: 20px; color: var(--ink);
+    background: var(--bg); border: 1.5px solid var(--line); border-radius: 8px;
+    padding: 8px 10px; min-height: 44px; width: 100%;
+  }
+  .hint { color: var(--muted); font-size: 16px; margin: 0 0 12px; }
+
+  #unsupported { display: none; border-color: var(--gold-dim); }
+  body.nobt #unsupported { display: grid; }
+
+  @media (prefers-reduced-motion: reduce) { #plate { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Helmet control</h1>
+
+  <div class="hero">
+    <svg viewBox="0 0 240 290" role="img" aria-label="Helmet faceplate, glowing eyes follow the brightness slider">
+      <path d="M52 70 Q120 40 188 70 L200 170 Q196 235 120 272 Q44 235 40 170 Z" fill="#1a0407" stroke="#6a2b31" stroke-width="2"/>
+      <g id="plate">
+        <path d="M40 40 Q120 8 200 40 L214 150 Q210 222 120 266 Q30 222 26 150 Z" fill="#8e1b22" stroke="#e3ae45" stroke-width="3"/>
+        <path d="M120 22 L120 258" stroke="#e3ae45" stroke-opacity=".35" stroke-width="1.5"/>
+        <polygon class="slit" points="52,112 108,124 104,144 56,136"/>
+        <polygon class="slit" points="188,112 132,124 136,144 184,136"/>
+      </g>
+    </svg>
+  </div>
+
+  <section class="panel" id="unsupported">
+    <h2>Bluetooth not available here</h2>
+    <p class="hint">On Android, open this page in Chrome. On iPhone, open it in the Bluefy browser app.</p>
+  </section>
+
+  <section class="panel" aria-label="Connection">
+    <button id="connect" class="primary">Connect to helmet</button>
+    <p id="status" role="status" aria-live="polite">Not connected</p>
+  </section>
+
+  <section class="panel" aria-label="Mask">
+    <h2>Mask</h2>
+    <div class="pair">
+      <button id="open">Open mask</button>
+      <button id="close">Close mask</button>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Levels">
+    <div class="slider">
+      <label for="eye">Eye brightness <output id="eyeOut">80</output></label>
+      <input id="eye" type="range" min="0" max="100" value="80">
+    </div>
+    <div class="slider">
+      <label for="vol">Volume <output id="volOut">60</output></label>
+      <input id="vol" type="range" min="0" max="100" value="60">
+    </div>
+  </section>
+
+  <details class="panel">
+    <summary>Faceplate setup</summary>
+    <p class="hint">Move a few degrees at a time and stop if the faceplate binds. Set the pose, then save it as open or closed.</p>
+    <div class="row"><span>Servo 1</span><input id="a1" type="number" min="0" max="180" value="90" aria-label="Servo 1 angle"><button id="jog1">Move</button></div>
+    <div class="row"><span>Servo 2</span><input id="a2" type="number" min="0" max="180" value="90" aria-label="Servo 2 angle"><button id="jog2">Move</button></div>
+    <div class="pair">
+      <button id="saveOpen">Save as open</button>
+      <button id="saveClosed">Save as closed</button>
+    </div>
+  </details>
+</main>
+
+<script>
+const SERVICE = '7a1c0001-5e3b-4f6a-9d21-6b0f4c2e8a10';
+const CMD     = '7a1c0002-5e3b-4f6a-9d21-6b0f4c2e8a10';
+const STATE   = '7a1c0003-5e3b-4f6a-9d21-6b0f4c2e8a10';
+
+const $ = id => document.getElementById(id);
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
+let device = null, cmdChar = null, stateChar = null;
+let queue = Promise.resolve();
+
+function setStatus(t) { $('status').textContent = t; }
+
+function setEyes(v) {
+  document.documentElement.style.setProperty('--eye', v / 100);
+  $('eyeOut').textContent = v;
+}
+
+function updateConnectLabel() {
+  $('connect').textContent = cmdChar ? 'Disconnect' : (device ? 'Reconnect' : 'Connect to helmet');
+}
+
+// Writes are queued so Bluetooth never gets two at once
+function send(text) {
+  if (!cmdChar) { setStatus('Connect to the helmet first'); return Promise.resolve(false); }
+  queue = queue
+    .then(() => cmdChar.writeValueWithoutResponse
+      ? cmdChar.writeValueWithoutResponse(enc.encode(text))
+      : cmdChar.writeValue(enc.encode(text)))
+    .catch(e => setStatus('Send failed: ' + e.message));
+  return queue;
+}
+
+function throttle(fn, ms) {
+  let last = 0, timer = null, latest;
+  return arg => {
+    latest = arg;
+    const wait = ms - (Date.now() - last);
+    if (wait <= 0) { last = Date.now(); fn(arg); }
+    else { clearTimeout(timer); timer = setTimeout(() => { last = Date.now(); fn(latest); }, wait); }
+  };
+}
+
+function parseState(s) {
+  const m = /m=(\w+) e=(\d+) v=(\d+)/.exec(s);
+  if (!m) return;
+  const [, mask, e, v] = m;
+  if (mask === 'open') document.body.classList.add('open');
+  if (mask === 'closed') document.body.classList.remove('open');
+  if (document.activeElement !== $('eye')) { $('eye').value = e; setEyes(+e); }
+  if (document.activeElement !== $('vol')) { $('vol').value = v; $('volOut').textContent = v; }
+  setStatus('Connected. Mask ' + mask + '.');
+}
+
+async function attach(server) {
+  const svc = await server.getPrimaryService(SERVICE);
+  cmdChar = await svc.getCharacteristic(CMD);
+  stateChar = await svc.getCharacteristic(STATE);
+  stateChar.addEventListener('characteristicvaluechanged', e => parseState(dec.decode(e.target.value)));
+  await stateChar.startNotifications();
+  setStatus('Connected');
+  await send('STATE');
+}
+
+function onDrop() {
+  cmdChar = null; stateChar = null;
+  setStatus('Disconnected');
+  updateConnectLabel();
+}
+
+async function connect() {
+  if (cmdChar) { device.gatt.disconnect(); return; }
+  $('connect').disabled = true;
+  try {
+    if (device) {
+      try { await attach(await device.gatt.connect()); return; }
+      catch (e) { /* fall through to the device chooser */ }
+    }
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [SERVICE] }],
+      optionalServices: [SERVICE]
+    });
+    device.addEventListener('gattserverdisconnected', onDrop);
+    setStatus('Connecting...');
+    await attach(await device.gatt.connect());
+  } catch (e) {
+    setStatus(e.name === 'NotFoundError' ? 'No helmet chosen' : 'Could not connect: ' + e.message);
+  } finally {
+    $('connect').disabled = false;
+    updateConnectLabel();
+  }
+}
+
+if (!navigator.bluetooth) {
+  document.body.classList.add('nobt');
+  $('connect').disabled = true;
+  setStatus('Bluetooth is not available in this browser');
+}
+
+$('connect').addEventListener('click', connect);
+
+$('open').addEventListener('click', () => {
+  if (!cmdChar) return setStatus('Connect to the helmet first');
+  document.body.classList.add('open');
+  send('MASK OPEN');
+});
+$('close').addEventListener('click', () => {
+  if (!cmdChar) return setStatus('Connect to the helmet first');
+  document.body.classList.remove('open');
+  send('MASK CLOSE');
+});
+
+const sendEye = throttle(v => send('EYE ' + v), 100);
+const sendVol = throttle(v => send('VOL ' + v), 100);
+$('eye').addEventListener('input', e => { setEyes(+e.target.value); sendEye(e.target.value); });
+$('vol').addEventListener('input', e => { $('volOut').textContent = e.target.value; sendVol(e.target.value); });
+
+$('jog1').addEventListener('click', () => send('JOG 1 ' + $('a1').value));
+$('jog2').addEventListener('click', () => send('JOG 2 ' + $('a2').value));
+$('saveOpen').addEventListener('click', () => send('SETOPEN'));
+$('saveClosed').addEventListener('click', () => send('SETCLOSED'));
+</script>
+</body>
+</html>
